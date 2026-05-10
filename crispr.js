@@ -59,12 +59,12 @@ canvas.addEventListener('click', (e) => {
       if (470 < y && y < 520) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; show_break = true; }
     }
   }
-});
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === '1') { state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0 }
-  if (e.key === '2') { state = 'BINDING' }
-  if (e.key === '3') { state = 'CLEAVAGE'; show_break = true }
+  // Navigation buttons
+  if (650 <= y && y <= 690) {
+    if (50 <= x && x <= 170) { state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0; }
+    if (180 <= x && x <= 300) { state = 'BINDING'; }
+    if (310 <= x && x <= 430) { state = 'CLEAVAGE'; show_break = true; }
+  }
 });
 
 function drawHUD(x, y, w, title, body) {
@@ -166,9 +166,17 @@ function draw() {
     });
   }
 
-  // Keys box
-  ctx.fillStyle = '#1E1E1E'; roundRect(ctx,50,650,400,40,5,true,false);
-  ctx.fillStyle = WHITE; ctx.font = '16px "Courier New"'; ctx.fillText('KEYS: [1] Scan | [2] Bind | [3] Cut', 60, 675);
+  // Navigation buttons
+  const buttons = [
+    { x: 50, y: 650, w: 120, h: 40, label: 'Scan', action: () => { state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0; } },
+    { x: 180, y: 650, w: 120, h: 40, label: 'Bind', action: () => { state = 'BINDING'; } },
+    { x: 310, y: 650, w: 120, h: 40, label: 'Cut', action: () => { state = 'CLEAVAGE'; show_break = true; } }
+  ];
+  buttons.forEach(btn => {
+    ctx.fillStyle = BUTTON_COLOR; roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 8, true, false);
+    ctx.strokeStyle = HIGHLIGHT; ctx.lineWidth = 2; ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+    ctx.fillStyle = WHITE; ctx.font = '16px "Courier New"'; ctx.fillText(btn.label, btn.x + 10, btn.y + 25);
+  });
 
   requestAnimationFrame(draw);
 }
