@@ -10,21 +10,15 @@ function resizeCanvas() {
   const wrapper = canvas.parentElement;
   const rect = wrapper.getBoundingClientRect();
   
-  // Set canvas resolution
-  canvas.width = Math.floor(rect.width * window.devicePixelRatio);
-  canvas.height = Math.floor(rect.height * window.devicePixelRatio);
+  // Set canvas resolution - use actual pixel dimensions
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
   
-  // Update drawing dimensions
-  WIDTH = rect.width;
-  HEIGHT = rect.height;
-  
-  // Calculate scale to maintain aspect ratio while fitting
-  const scaleX = WIDTH / baseWidth;
-  const scaleY = HEIGHT / baseHeight;
+  // Calculate scale to fit logical canvas (1000x700) into display area
+  const scaleX = rect.width / baseWidth;
+  const scaleY = rect.height / baseHeight;
   scale = Math.min(scaleX, scaleY);
-  
-  // Apply device pixel ratio for crisp rendering
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 }
 
 resizeCanvas();
@@ -121,19 +115,25 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
 }
 
 function draw() {
-  // Clear canvas
-  ctx.fillStyle = '#0A0F19';
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  // Reset context - account for device pixel ratio
+  const dpr = window.devicePixelRatio || 1;
+  ctx.resetTransform?.() || ctx.setTransform(1, 0, 0, 1, 0, 0);
   
-  // Background gradient
+  // Clear entire physical canvas
+  ctx.fillStyle = '#0A0F19';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Apply device pixel ratio and scale
+  ctx.scale(dpr, dpr);
+  ctx.scale(scale, scale);
+  
+  // Now draw the logical content at 1000x700 coordinates
   const bgGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
   bgGradient.addColorStop(0, '#0A0F19');
   bgGradient.addColorStop(1, '#1A1F29');
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
   
-  ctx.save();
-  ctx.scale(scale, scale);
   const time_factor = Date.now() * 0.003;
   // Title
   ctx.fillStyle = NEON_CYAN; ctx.font = '32px "Courier New"';
@@ -444,7 +444,6 @@ function draw() {
     ctx.fillText(btn.label, btn.x + 15, btn.y + 25);
   });
 
-  ctx.restore();
   requestAnimationFrame(draw);
 }
 
