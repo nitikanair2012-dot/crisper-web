@@ -85,11 +85,11 @@ canvas.addEventListener('click', (e) => {
       if (470 < y && y < 520) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; show_break = true; }
     }
   }
-  // Navigation buttons
+  // Navigation buttons - precise ranges matching button positions
   if (650 <= y && y <= 690) {
-    if (50 <= x && x <= 170) { state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0; }
-    if (180 <= x && x <= 300) { state = 'BINDING'; }
-    if (310 <= x && x <= 430) { state = 'CLEAVAGE'; show_break = true; }
+    if (50 <= x && x < 180) { state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0; }
+    else if (180 <= x && x < 310) { state = 'BINDING'; }
+    else if (310 <= x && x <= 430) { state = 'CLEAVAGE'; show_break = true; }
   }
 });
 
