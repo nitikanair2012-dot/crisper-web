@@ -69,6 +69,8 @@ function draw() {
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 
+  const time = Date.now() * 0.002;
+
   // Background with gradient
   const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
   gradient.addColorStop(0, DARK_BG);
@@ -87,8 +89,6 @@ function draw() {
     ctx.arc(px, py, 2, 0, Math.PI * 2);
     ctx.fill();
   }
-  
-  const time = Date.now() * 0.002;
 
   // Title with glow
   ctx.shadowBlur = 20;
