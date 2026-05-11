@@ -9,33 +9,51 @@ function resizeCanvas() {
   const wrapper = canvas.parentElement;
   const rect = wrapper.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
+  
   canvas.width = Math.floor(rect.width * dpr);
   canvas.height = Math.floor(rect.height * dpr);
   
-  // Logic scale: How much we are stretching the 1000x700 map
+  // Calculate the scale to map screen pixels back to your 1000x700 logic
   scale = Math.min(rect.width / baseWidth, rect.height / baseHeight);
 }
 
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// --- UPDATED THEME COLORS (White & Blue) ---
-const DARK_BG = '#050A15';
-const PRIMARY_BLUE = '#00B4FF'; // Brighter cyan-blue
-const SOFT_BLUE = '#A0D8EF';
+// COLORS - Your Original Neon/White Theme
+const DARK_BG = '#0A0F19';
+const PRIMARY_BLUE = '#0099FF';
 const WHITE = '#FFFFFF';
-const GLASS_WHITE = 'rgba(255, 255, 255, 0.1)';
-const ENZYME_COLOR = '#FFD700'; // Cas9 stays gold for contrast
+const ACCENT_WHITE = '#E3F2FD';
+const ENZYME_COLOR = '#FFD700';
+const NEON_CYAN = PRIMARY_BLUE;
 
+// YOUR EXPLANATIONS
 const SCIENCE_LOG = {
-  SCANNING: { title: 'PHASE: TARGETING', body: ['Scanning genome with gRNA...', 'Identifying PAM sequences.']},
-  BINDING: { title: 'PHASE: BINDING', body: ['DNA double helix unwinding...', 'RNA-DNA heteroduplex forming.']},
-  CLEAVAGE: { title: 'PHASE: CLEAVAGE', body: ['Cas9 nuclease domains active.', 'Inducing Double-Strand Break (DSB).']},
-  FIXING: { title: 'PHASE: REPAIRING', body: ['Cellular repair machinery recruited.', 'Processing DNA ends...']},
-  NHEJ: { title: 'RESULT: NHEJ', body: ['Non-Homologous End Joining.', 'Error-prone repair complete.']},
-  HDR: { title: 'RESULT: HDR', body: ['Homology-Directed Repair.', 'Template-based precision edit.']}
+  SCANNING: { title: 'PHASE: TARGETING', body: [
+    'The Cas9 protein complex utilizes guide',
+    'RNA to scan the genome. It identifies',
+    'the target DNA site by locating',
+    'complementary base pairs, ensuring',
+    'high specificity in the process.']},
+  BINDING: { title: 'PHASE: BINDING', body: [
+    'Upon finding a matching sequence, the',
+    'Cas9 protein undergoes a conformational',
+    'change. It unwinds the DNA double helix,',
+    'exposing the target strands and',
+    'preparing for enzymatic cleavage.']},
+  CLEAVAGE: { title: 'PHASE: CLEAVAGE', body: [
+    'Cas9 functions as molecular scissors,',
+    'inducing a double-strand break (DSB)',
+    'at the precise genomic location. This',
+    'signals the cell to initiate its',
+    'DNA damage response mechanisms.']},
+  FIXING: { title: 'PHASE: REPAIRING', body: ['The cell detects the DNA break and','recruits repair machinery to the site.','The chosen pathway will determine the','final genetic outcome, whether through','random mutations or precise editing.']},
+  NHEJ: { title: 'RESULT: NHEJ', body: ['Non-Homologous End Joining (NHEJ) is','the primary repair pathway. It ligates','broken DNA ends directly. This is rapid','but error-prone, often resulting in','insertions or deletions (indels).']},
+  HDR: { title: 'RESULT: HDR', body: ['Homology-Directed Repair (HDR) uses a','donor DNA template to repair the','break. By following this template,','the cell achieves precise, error-free','gene correction.']}
 };
 
+// State
 let state = 'SCANNING';
 let repair_choice = null;
 let repair_progress = 0;
@@ -43,141 +61,149 @@ let cas9_pos = 150;
 let target_pos = 150;
 let show_break = false;
 
-// --- FIXED INPUT HANDLING ---
+// --- FIXED BUTTON CLICKS ---
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
-  
-  // Calculate EXACT logical coordinates (0-1000)
+  // Map mouse clicks to your 1000x700 logic space
   const x = (e.clientX - rect.left) / scale;
   const y = (e.clientY - rect.top) / scale;
   
-  // Nav buttons logic
-  if (y > 620) {
-    if (x > 50 && x < 170) { state = 'SCANNING'; show_break = false; repair_choice = null; }
-    else if (x > 180 && x < 300) { state = 'BINDING'; }
-    else if (x > 310 && x < 430) { state = 'CLEAVAGE'; show_break = true; }
+  if (state === 'CLEAVAGE') {
+    if (650 < x && x < 950) {
+      if (400 < y && y < 450) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; show_break = true; }
+      if (470 < y && y < 520) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; show_break = true; }
+    }
   }
-  
-  // Repair choices logic
-  if (state === 'CLEAVAGE' && x > 650 && x < 950) {
-    if (y > 400 && y < 450) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; }
-    if (y > 470 && y < 520) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; }
+
+  // Nav Buttons (Matches the drawing positions exactly now)
+  if (y >= 640 && y <= 700) {
+    if (x >= 50 && x < 170) { state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0; }
+    else if (x >= 180 && x < 300) { state = 'BINDING'; }
+    else if (x >= 310 && x <= 430) { state = 'CLEAVAGE'; show_break = true; }
   }
 });
 
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+function drawHUD(x, y, w, title, body) {
+  const h = body.length * 28 + 60;
+  ctx.fillStyle = '#141927'; ctx.strokeStyle = NEON_CYAN; ctx.lineWidth = 2;
+  roundRect(ctx, x, y, w, h, 10, true, true);
+  ctx.fillStyle = NEON_CYAN; ctx.font = '18px "Courier New"'; ctx.fillText(title, x+15, y+35);
+  ctx.fillStyle = WHITE; ctx.font = '16px Arial';
+  body.forEach((line,i)=> ctx.fillText(line, x+15, y+65 + i*28));
+}
+
 function draw() {
   const dpr = window.devicePixelRatio || 1;
+  // Apply logic scaling so all coordinates use your 1000x700 system
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
-
-  // Background
+  
   ctx.fillStyle = DARK_BG;
   ctx.fillRect(0, 0, baseWidth, baseHeight);
   
-  const time = Date.now() * 0.002;
+  const time_factor = Date.now() * 0.003;
+  ctx.fillStyle = NEON_CYAN; ctx.font = '32px "Courier New"';
+  const title = 'CRISPR-CAS9 MECHANISM';
+  ctx.fillText(title, 500 - ctx.measureText(title).width/2, 50);
 
-  // Title
-  ctx.fillStyle = WHITE;
-  ctx.font = 'bold 28px "Courier New"';
-  ctx.fillText('CRISPR-CAS9 // GENE EDIT', 50, 60);
-
-  // --- LOGIC ---
+  // Logic
   if (state === 'SCANNING') {
-    if (Math.random() < 0.01) target_pos = 150 + Math.random() * 300;
+    if (Math.random() < 0.02) target_pos = 150 + Math.random()*300;
     cas9_pos += (target_pos - cas9_pos) * 0.05;
   } else if (state === 'FIXING') {
-    repair_progress += 0.8;
-    if (repair_progress >= 100) { state = repair_choice; show_break = false; }
+    repair_progress += 1;
+    if (repair_progress >= 100) { show_break = false; state = repair_choice; repair_progress = 0; }
   } else {
     cas9_pos += (300 - cas9_pos) * 0.1;
   }
 
-  // --- 3D HELIX DRAWING ---
-  const cx = 500;
-  for (let i = 0; i < 18; i++) {
-    const y = 100 + i * 30;
-    const rot = time + i * 0.4;
-    const sin = Math.sin(rot);
-    const cos = Math.cos(rot);
-    
-    // Perspective sizing
-    const size = 6 + cos * 3;
-    const lx = cx + sin * 60;
-    const rx = cx - sin * 60;
-
-    const isBreaking = show_break && i > 7 && i < 11;
-    const gap = isBreaking ? (state === 'FIXING' ? 50 - (repair_progress/2) : 50) : 0;
-
-    // Draw Strands
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = cos > 0 ? PRIMARY_BLUE : SOFT_BLUE;
-    ctx.beginPath();
-    ctx.moveTo(lx - gap, y);
-    ctx.lineTo(rx + gap, y);
-    ctx.stroke();
-
-    // Draw Nucleotides (3D spheres)
-    ctx.fillStyle = cos > 0 ? WHITE : PRIMARY_BLUE;
-    ctx.beginPath(); ctx.arc(lx - gap, y, size, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx + gap, y, size, 0, Math.PI * 2); ctx.fill();
+  // --- 3D HELIX (Your Original Depth Logic) ---
+  const rotation3d = time_factor * 1.5;
+  const helixSegments = [];
+  for (let i=0; i<16; i++){
+    const y = 150 + i*35;
+    const phase = i*0.5;
+    const rotX = Math.sin(rotation3d + phase);
+    const depth1 = rotX;
+    const depth2 = -rotX;
+    const scale1 = 0.7 + (depth1 + 1) * 0.15;
+    const scale2 = 0.7 + (depth2 + 1) * 0.15;
+    const x1 = Math.sin(time_factor + phase) * 40 * scale1;
+    const x2 = Math.sin(time_factor + phase + Math.PI) * 40 * scale2;
+    const gap = (show_break && 6<=i && i<=9 && state==='FIXING') ? (40 - (repair_progress*0.4)) : (show_break && ['CLEAVAGE','FIXING'].includes(state) ? 40 : 0);
+    helixSegments.push({ i, y, x1, x2, depth1, depth2, scale1, scale2, gap });
   }
-
-  // --- CAS9 PROTEIN ---
-  ctx.save();
-  ctx.translate(450, cas9_pos);
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = PRIMARY_BLUE;
-  ctx.fillStyle = ENZYME_COLOR;
-  ctx.beginPath();
-  ctx.arc(50, 50, 40 + Math.sin(time)*5, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = WHITE;
-  ctx.font = '14px Arial';
-  ctx.fillText("CAS9", 33, 55);
-  ctx.restore();
-
-  // --- HUD BOX ---
-  const currentData = SCIENCE_LOG[repair_choice || state] || SCIENCE_LOG.SCANNING;
-  ctx.fillStyle = 'rgba(20, 30, 50, 0.8)';
-  ctx.strokeStyle = PRIMARY_BLUE;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(50, 400, 350, 180, 10);
-  ctx.fill(); ctx.stroke();
-
-  ctx.fillStyle = PRIMARY_BLUE;
-  ctx.font = 'bold 18px Arial';
-  ctx.fillText(currentData.title, 70, 435);
-  ctx.fillStyle = WHITE;
-  ctx.font = '15px Arial';
-  currentData.body.forEach((line, idx) => {
-    ctx.fillText(line, 70, 470 + idx * 25);
+  
+  // Draw Helix Strands & Bases
+  helixSegments.forEach(seg => {
+    ctx.lineWidth = 3;
+    const center_x = 500;
+    // Connect strands
+    ctx.strokeStyle = seg.depth1 > 0 ? PRIMARY_BLUE : 'rgba(0,153,255,0.3)';
+    if (!(show_break && seg.gap > 5)) {
+      ctx.beginPath(); ctx.moveTo(center_x + seg.x1 - seg.gap, seg.y); ctx.lineTo(center_x + seg.x2 + seg.gap, seg.y); ctx.stroke();
+    }
+    // Nucleotides
+    ctx.fillStyle = seg.depth1 > 0 ? WHITE : 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.arc(center_x + seg.x1 - seg.gap, seg.y, 6 * seg.scale1, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = seg.depth2 > 0 ? WHITE : 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.arc(center_x + seg.x2 + seg.gap, seg.y, 6 * seg.scale2, 0, Math.PI*2); ctx.fill();
   });
 
-  // --- ACTION BUTTONS (CLEAVAGE STATE) ---
-  if (state === 'CLEAVAGE') {
-    drawButton(650, 400, 300, 50, 'TRIGGER NHEJ', 'red');
-    drawButton(650, 470, 300, 50, 'TRIGGER HDR', PRIMARY_BLUE);
+  // --- REPAIR ANIMATION ---
+  if (state==='FIXING'){
+    const ez_offset = 300 - (repair_progress*3);
+    ctx.fillStyle = ENZYME_COLOR;
+    ctx.beginPath(); ctx.arc(500 - ez_offset, 350, 8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(500 + ez_offset, 350, 8, 0, Math.PI*2); ctx.fill();
   }
 
-  // --- NAV BUTTONS (BOTTOM) ---
-  drawButton(50, 630, 120, 40, 'SCAN', state === 'SCANNING' ? PRIMARY_BLUE : 'grey');
-  drawButton(180, 630, 120, 40, 'BIND', state === 'BINDING' ? PRIMARY_BLUE : 'grey');
-  drawButton(310, 630, 120, 40, 'CUT', state === 'CLEAVAGE' ? PRIMARY_BLUE : 'grey');
+  // --- CAS9 PROTEIN (Your 3D Scissor Blades) ---
+  ctx.save();
+  ctx.translate(440, cas9_pos);
+  ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+  ctx.beginPath(); ctx.arc(60, 60, 40, 0, Math.PI*2); ctx.fill();
+  if (state !== 'SCANNING'){
+    const spin = Math.sin(time_factor*2)*10;
+    ctx.strokeStyle = WHITE; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(50+spin, 40); ctx.lineTo(50-spin, 80); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(70+spin, 40); ctx.lineTo(70-spin, 80); ctx.stroke();
+  }
+  ctx.fillStyle = WHITE; ctx.font = '16px Arial'; ctx.fillText('Cas9 Protein', 0, -10);
+  ctx.restore();
+
+  // --- UI & BUTTONS ---
+  if (state === 'CLEAVAGE'){
+    [[400,'1. CLICK HERE: NHEJ'],[470,'2. CLICK HERE: HDR']].forEach(([rect_y,label])=>{
+      ctx.fillStyle = '#1565C0'; ctx.strokeStyle = WHITE;
+      roundRect(ctx, 650, rect_y, 300, 50, 8, true, true);
+      ctx.fillStyle = WHITE; ctx.font = '16px "Courier New"'; ctx.fillText(label, 665, rect_y + 32);
+    });
+  }
+
+  const current_key = (repair_choice && state !== 'FIXING') ? repair_choice : state;
+  const data = SCIENCE_LOG[current_key] || SCIENCE_LOG['SCANNING'];
+  drawHUD(50, 380, 350, data.title, data.body);
+
+  // Navigation Bar
+  const navs = [{l:'Scan',x:50},{l:'Bind',x:180},{l:'Cut',x:310}];
+  navs.forEach(n => {
+    ctx.fillStyle = '#1565C0'; ctx.strokeStyle = WHITE;
+    roundRect(ctx, n.x, 650, 120, 40, 8, true, true);
+    ctx.fillStyle = WHITE; ctx.font = '14px "Courier New"'; ctx.fillText(n.l, n.x + 15, 675);
+  });
 
   requestAnimationFrame(draw);
 }
-
-function drawButton(x, y, w, h, label, color) {
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 5);
-  ctx.fill(); ctx.stroke();
-  
-  ctx.fillStyle = WHITE;
-  ctx.font = 'bold 14px "Courier New"';
-  ctx.fillText(label, x + 15, y + h/2 + 5);
-}
-
 draw();
