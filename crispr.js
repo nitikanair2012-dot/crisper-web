@@ -1,176 +1,110 @@
-// 1. MOBILE SCALING SETUP
-const meta = document.createElement('meta');
-meta.name = "viewport";
-meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
-document.head.appendChild(meta);
-
-const style = document.createElement('style');
-style.innerHTML = `
-  body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0A0F19; font-family: sans-serif; }
-  #canvas-container { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
-  canvas { display: block; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; }
-`;
-document.head.appendChild(style);
-
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const baseWidth = 1000, baseHeight = 700;
 let scale = 1;
 
-function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-    
-    scale = Math.min(screenW / baseWidth, screenH / baseHeight);
-    
-    canvas.width = baseWidth * dpr * scale;
-    canvas.height = baseHeight * dpr * scale;
-    canvas.style.width = (baseWidth * scale) + "px";
-    canvas.style.height = (baseHeight * scale) + "px";
+function resizeCanvas() {
+  const wrapper = canvas.parentElement;
+  const rect = wrapper.getBoundingClientRect();
+  
+  const dpr = window.devicePixelRatio || 1;
+  // Set physical resolution
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+  
+  // Logical scale (how much we shrink/grow 1000x700 to fit the screen)
+  const scaleX = rect.width / baseWidth;
+  const scaleY = rect.height / baseHeight;
+  scale = Math.min(scaleX, scaleY);
 }
 
-window.addEventListener('resize', resize);
-resize();
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-// 2. DATA & STATE
-const SCIENCE_LOG = {
-  SCANNING: { title: 'PHASE: TARGETING', body: ['Cas9 scans the genome with guide RNA.', 'Identifies target DNA sequences.']},
-  BINDING: { title: 'PHASE: BINDING', body: ['Cas9 unwinds the DNA double helix.', 'Preparing for enzymatic cleavage.']},
-  CLEAVAGE: { title: 'PHASE: CLEAVAGE', body: ['Molecular scissors induce a break.', 'Triggers cellular repair response.']},
-  FIXING: { title: 'PHASE: REPAIRING', body: ['Cell detects break and recruits repair.', 'Pathway choice determines outcome.']},
-  NHEJ: { title: 'RESULT: NHEJ', body: ['GENE EDIT SUCCESS: Mutation Induced.', 'DNA ends ligated via error-prone pathway.']},
-  HDR: { title: 'RESULT: HDR', body: ['GENE EDIT SUCCESS: Precise Correction.', 'Template used for error-free repair.']}
-};
+// Input handling - FIXED coordinate math
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  
+  // Calculate exactly where on the 1000x700 map the user clicked
+  // This accounts for both CSS scaling and the canvas internal scaling
+  const clickX = (e.clientX - rect.left) * (baseWidth / rect.width);
+  const clickY = (e.clientY - rect.top) * (baseHeight / rect.height);
+  
+  // Debug (Optional): console.log(clickX, clickY);
 
-let state = 'SCANNING', repair_choice = null, repair_progress = 0;
-let cas9_pos = 150, target_pos = 150, show_break = false;
-
-// 3. INPUT (Touch + Mouse)
-const getCoords = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: (clientX - rect.left) / scale, y: (clientY - rect.top) / scale };
-};
-
-const handlePress = (e) => {
-    const {x, y} = getCoords(e);
-    // Navigation
-    if (y >= 630 && y <= 700) {
-        if (x >= 40 && x < 170) { state = 'SCANNING'; show_break = false; repair_choice = null; }
-        else if (x >= 180 && x < 310) { state = 'BINDING'; }
-        else if (x >= 320 && x <= 450) { state = 'CLEAVAGE'; show_break = true; }
+  // 1. Logic for NHEJ/HDR Selection buttons
+  if (state === 'CLEAVAGE') {
+    if (clickX >= 650 && clickX <= 950) {
+      if (clickY >= 400 && clickY <= 450) { 
+          state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; show_break = true; 
+      } else if (clickY >= 470 && clickY <= 520) { 
+          state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; show_break = true; 
+      }
     }
-    // Choices
-    if (state === 'CLEAVAGE' && x > 640 && x < 960) {
-        if (y > 390 && y < 460) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; }
-        if (y > 470 && y < 540) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; }
+  }
+
+  // 2. Logic for Bottom Navigation buttons (Scan, Bind, Cut)
+  // We use the same Y range for all three: 650 to 690
+  if (clickY >= 650 && clickY <= 690) {
+    if (clickX >= 50 && clickX <= 170) { 
+        state = 'SCANNING'; show_break = false; repair_choice = null; repair_progress = 0; 
     }
-};
+    else if (clickX >= 180 && clickX <= 300) { 
+        state = 'BINDING'; 
+    }
+    else if (clickX >= 310 && clickX <= 430) { 
+        state = 'CLEAVAGE'; show_break = true; 
+    }
+  }
+});
 
-canvas.addEventListener('mousedown', handlePress);
-canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handlePress(e); }, {passive: false});
+// ... [Keep your COLORS, Fonts, and SCIENCE_LOG constants the same] ...
 
-// 4. DRAWING
 function draw() {
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
-    ctx.fillStyle = '#0A0F19';
-    ctx.fillRect(0, 0, baseWidth, baseHeight);
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Clear transformations
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Apply scaling once for everything
+  // This ensures the "Cut" button drawn at 310 is at the same spot the click logic looks for 310
+  ctx.scale(dpr * scale, dpr * scale);
+
+  const time_factor = Date.now() * 0.003;
+  
+  // Background
+  const bgGradient = ctx.createLinearGradient(0, 0, 0, baseHeight);
+  bgGradient.addColorStop(0, '#0A0F19');
+  bgGradient.addColorStop(1, '#1A1F29');
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+  // [ ... INSERT YOUR HELIX AND CAS9 DRAWING CODE HERE ... ]
+
+  // Navigation buttons - REMOVED the "resetTransform" from inside here
+  // because we want them to stay in the 1000x700 coordinate system
+  const buttons = [
+    { x: 50, y: 650, w: 120, h: 40, label: 'Scan' },
+    { x: 180, y: 650, w: 120, h: 40, label: 'Bind' },
+    { x: 310, y: 650, w: 120, h: 40, label: 'Cut' }
+  ];
+
+  buttons.forEach((btn, idx) => {
+    const navDepth = Math.sin(time_factor + idx) * 0.1 + 0.9;
     
-    const time = Date.now() * 0.003;
-
-    // 3D Helix
-    for (let i=0; i<16; i++) {
-        const y = 120 + i*35;
-        const rot = time + (i * 0.5);
-        const depth = Math.sin(rot);
-        const perspective = 0.7 + (depth + 1) * 0.15;
-        const x1 = Math.sin(time + i*0.5) * 40 * perspective;
-        const x2 = Math.sin(time + i*0.5 + Math.PI) * 40 * perspective;
-        const gap = (show_break && i > 6 && i < 10) ? (state === 'FIXING' ? 40 - repair_progress*0.4 : 40) : 0;
-
-        ctx.strokeStyle = depth > 0 ? '#0099FF' : 'rgba(0,153,255,0.3)';
-        if (!(show_break && gap > 5)) {
-            ctx.beginPath(); ctx.moveTo(500 + x1 - gap, y); ctx.lineTo(500 + x2 + gap, y); ctx.stroke();
-        }
-        ctx.fillStyle = depth > 0 ? '#FFF' : 'rgba(255,255,255,0.3)';
-        ctx.beginPath(); ctx.arc(500 + x1 - gap, y, 6*perspective, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(500 + x2 + gap, y, 6*perspective, 0, Math.PI*2); ctx.fill();
-    }
-
-    // Logic updates
-    if (state === 'SCANNING') {
-        if (Math.random() < 0.02) target_pos = 150 + Math.random()*300;
-        cas9_pos += (target_pos - cas9_pos) * 0.05;
-    } else if (state === 'FIXING') {
-        repair_progress += 1;
-        if (repair_progress >= 100) { show_break = false; state = repair_choice; }
-    } else {
-        cas9_pos += (300 - cas9_pos) * 0.1;
-    }
-
-    // Cas9
-    ctx.save();
-    ctx.translate(440, cas9_pos);
-    ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
-    ctx.beginPath(); ctx.arc(60, 60, 45, 0, Math.PI*2); ctx.fill();
-    if (state !== 'SCANNING') {
-        const spin = Math.sin(time*2)*10;
-        ctx.strokeStyle = '#FFF'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(50+spin, 40); ctx.lineTo(50-spin, 80); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(70+spin, 40); ctx.lineTo(70-spin, 80); ctx.stroke();
-    }
-    ctx.fillStyle = '#FFF'; ctx.font = 'bold 16px Arial'; ctx.fillText('Cas9 Protein', 10, -10);
-    ctx.restore();
-
-    // HUD + REPAIR SUCCESS ENDING
-    const isEnd = (state === 'NHEJ' || state === 'HDR');
-    const data = SCIENCE_LOG[state] || SCIENCE_LOG.SCANNING;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    roundRect(ctx, btn.x + 2, btn.y + 2, btn.w, btn.h, 8, true, false);
     
-    ctx.fillStyle = '#141927'; 
-    ctx.strokeStyle = isEnd ? '#00FF00' : '#0099FF'; // Glow green if it's the end
-    ctx.lineWidth = 3;
+    ctx.fillStyle = `rgba(30, 37, 57, ${navDepth})`;
+    ctx.strokeStyle = `rgba(100, 200, 255, ${navDepth})`;
+    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 8, true, true);
     
-    // Draw Box
-    ctx.beginPath();
-    ctx.roundRect(50, 400, 350, 180, 10);
-    ctx.fill(); ctx.stroke();
-    
-    ctx.fillStyle = isEnd ? '#00FF00' : '#0099FF';
-    ctx.font = 'bold 18px "Courier New"'; 
-    ctx.fillText(data.title, 70, 435);
-    
-    ctx.fillStyle = '#FFF'; 
-    ctx.font = '15px Arial';
-    data.body.forEach((l, i) => ctx.fillText(l, 70, 465 + i*28));
+    ctx.fillStyle = WHITE;
+    ctx.font = '14px "Courier New"';
+    ctx.fillText(btn.label, btn.x + 15, btn.y + 25);
+  });
 
-    if (isEnd) {
-        ctx.fillStyle = '#00FF00';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText('--- SIMULATION COMPLETE ---', 70, 560);
-    }
-
-    // Buttons
-    if (state === 'CLEAVAGE') {
-        [['1. TRIGGER NHEJ', 400], ['2. TRIGGER HDR', 480]].forEach(([txt, y]) => {
-            ctx.fillStyle = '#1565C0'; ctx.strokeStyle = '#FFF';
-            ctx.beginPath(); ctx.roundRect(650, y, 300, 55, 8); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#FFF'; ctx.font = 'bold 16px "Courier New"';
-            ctx.fillText(txt, 675, y + 35);
-        });
-    }
-
-    const navs = [['SCAN', 50], ['BIND', 190], ['CUT', 330]];
-    navs.forEach(([l, x]) => {
-        ctx.fillStyle = '#1565C0'; ctx.strokeStyle = '#FFF';
-        ctx.beginPath(); ctx.roundRect(x, 640, 120, 45, 8); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#FFF'; ctx.font = 'bold 14px "Courier New"';
-        ctx.fillText(l, x+22, 668);
-    });
-
-    requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
 }
+
 draw();
