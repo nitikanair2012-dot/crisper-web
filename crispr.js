@@ -75,8 +75,10 @@ let show_break = false;
 // Input handling
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / (rect.width / WIDTH);
-  const y = (e.clientY - rect.top) / (rect.height / HEIGHT);
+  // Convert click coordinates to logical canvas coordinates
+  const x = (e.clientX - rect.left) / rect.width * baseWidth;
+  const y = (e.clientY - rect.top) / rect.height * baseHeight;
+  
   if (state === 'CLEAVAGE') {
     if (650 < x && x < 950) {
       if (400 < y && y < 450) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; show_break = true; }
@@ -361,15 +363,11 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   
-  ctx.restore();
   ctx.shadowBlur = 0;
   // Protein label
   ctx.fillStyle = WHITE; ctx.font = '16px Arial'; ctx.fillText('Cas9 Protein', 440, cas9_pos - 10);
 
-  const current_key = (repair_choice && state !== 'FIXING') ? repair_choice : state;
-  const data = SCIENCE_LOG[current_key] || SCIENCE_LOG['SCANNING'];
-  drawHUD(50,400,350,data.title,data.body);
-
+  // Draw CLEAVAGE buttons BEFORE HUD so they're visible on top
   if (state === 'CLEAVAGE'){
     [[400,'1. CLICK HERE: NHEJ'],[470,'2. CLICK HERE: HDR']].forEach(([rect_y,label],idx)=>{
       const btnRotation = time_factor + idx;
@@ -404,6 +402,10 @@ function draw() {
       ctx.fillText(label,660,rect_y+32);
     });
   }
+
+  const current_key = (repair_choice && state !== 'FIXING') ? repair_choice : state;
+  const data = SCIENCE_LOG[current_key] || SCIENCE_LOG['SCANNING'];
+  drawHUD(50,400,350,data.title,data.body);
 
   // Navigation buttons with 3D effect
   const buttons = [
