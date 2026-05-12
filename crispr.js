@@ -70,6 +70,7 @@ function draw() {
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 
   const time = Date.now() * 0.002;
+  const currentData = SCIENCE_LOG[state] || SCIENCE_LOG.SCANNING;
 
   // Background with gradient
   const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
