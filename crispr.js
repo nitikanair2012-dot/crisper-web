@@ -28,12 +28,12 @@ const GLASS_WHITE = 'rgba(255, 255, 255, 0.1)';
 const ENZYME_COLOR = '#FFD700'; // Cas9 stays gold for contrast
 
 const SCIENCE_LOG = {
-  SCANNING: { title: 'PHASE: TARGETING', body: ['Scanning the entire genome with guide RNA (gRNA)...', 'Identifying PAM sequences (NGG) for Cas9 binding...', 'Searching for complementary DNA sequences to target specific genes.']},
-  BINDING: { title: 'PHASE: BINDING', body: ['DNA double helix unwinding at target site...', 'RNA-DNA heteroduplex formation between gRNA and target DNA...', 'Cas9 protein conformational change to active state.']},
-  CLEAVAGE: { title: 'PHASE: CLEAVAGE', body: ['Cas9 nuclease domains (RuvC and HNH) become active...', 'Inducing precise Double-Strand Break (DSB) in DNA...', 'Both DNA strands are cleaved simultaneously.']},
+  SCANNING: { title: 'PHASE: TARGETING', body: ['In the targeting phase, the Cas9-gRNA complex scans the genome', 'to find a specific DNA sequence. It first identifies a short "tag"', 'called the PAM, which allows the protein to briefly bind and unzip', 'the DNA. If the guide RNA matches the unzipped DNA sequence,', 'they "zip" together to form an R-loop; this precise match triggers', 'a final shape change in the Cas9 protein, positioning its molecular', '"scissors" to make a cut.']},
+  BINDING: { title: 'PHASE: BINDING', body: ['In the binding phase, the Cas9-gRNA complex scans the DNA for a', 'specific "landing pad" called the PAM. Once found, Cas9 unzips the', 'DNA so the guide RNA can test for a match. If the sequences align', 'perfectly, they lock together into a stable R-loop, anchoring the', 'enzyme in place and priming it to make the cut.']},
+  CLEAVAGE: { title: 'PHASE: CLEAVAGE', body: ['During cleavage, the Cas9 enzyme uses its two molecular "scissors"—', 'the HNH and RuvC domains—to snap both strands of the DNA. This occurs', 'precisely three nucleotides upstream of the PAM, creating a clean', 'double-strand break that triggers the cell\'s natural repair systems.']},
   FIXING: { title: 'PHASE: REPAIRING', body: ['Cellular DNA repair machinery is recruited to the break site...', 'Processing DNA ends and preparing for repair mechanisms...', 'Cell chooses between NHEJ or HDR repair pathways.']},
-  NHEJ: { title: 'RESULT: NHEJ', body: ['Non-Homologous End Joining repair pathway activated...', 'DNA ends are directly ligated together, often with small insertions/deletions...', 'Fast but error-prone repair mechanism commonly used.']},
-  HDR: { title: 'RESULT: HDR', body: ['Homology-Directed Repair using donor DNA template...', 'Precise gene editing with template-directed repair...', 'Requires cell to be in S/G2 phase of cell cycle for optimal efficiency.']}
+  NHEJ: { title: 'RESULT: NHEJ', body: ['NHEJ is the cell’s "quick-fix" response that simply glues the broken', 'DNA ends back together. Because it’s prone to errors, it often adds', 'or removes random bases, creating mutations that effectively knock', 'out or disable the target gene.']},
+  HDR: { title: 'RESULT: HDR', body: ['HDR is the "precise" repair route that uses a matching DNA template', 'to fix the break. By providing a custom template, scientists can guide', 'the cell to rewrite the genetic code, allowing for the knock-in of', 'specific new sequences or the correction of mutations.']}
 };
 
 let state = 'SCANNING';
@@ -171,26 +171,27 @@ function draw() {
   ctx.fillText("CAS9", 33, 55);
   ctx.restore();
 
-  // --- HUD BOX ---
-  const currentData = SCIENCE_LOG[repair_choice || state] || SCIENCE_LOG.SCANNING;
   ctx.fillStyle = 'rgba(20, 30, 50, 0.9)';
   ctx.strokeStyle = PRIMARY_BLUE;
   ctx.lineWidth = 3;
   ctx.shadowBlur = 15;
   ctx.shadowColor = PRIMARY_BLUE;
   ctx.beginPath();
-  ctx.roundRect(30, 350, 450, 250, 15);
+  ctx.roundRect(30, 350, 450, 300, 15);
   ctx.fill(); ctx.stroke();
   ctx.shadowBlur = 0;
 
   ctx.fillStyle = PRIMARY_BLUE;
-  ctx.font = 'bold 20px Arial';
+  ctx.font = 'bold 20px "Courier New"';
   ctx.fillText(currentData.title, 50, 390);
   ctx.fillStyle = WHITE;
-  ctx.font = '16px Arial';
+  ctx.shadowBlur = 5;
+  ctx.shadowColor = PRIMARY_BLUE;
+  ctx.font = '16px "Courier New"';
   currentData.body.forEach((line, idx) => {
-    ctx.fillText(line, 50, 430 + idx * 30);
+    ctx.fillText(line, 50, 430 + idx * 25);
   });
+  ctx.shadowBlur = 0;
 
   // --- ACTION BUTTONS (CLEAVAGE STATE) ---
   if (state === 'CLEAVAGE') {
