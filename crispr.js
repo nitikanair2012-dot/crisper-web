@@ -45,12 +45,12 @@ const SCIENCE_LOG = {
   HDR: { title: 'RESULT: HDR', body: ['HDR is the "precise" repair route that uses a matching DNA template', 'to fix the break. By providing a custom template, scientists can guide', 'the cell to rewrite the genetic code, allowing for the knock-in of', 'specific new sequences or the correction of mutations.']}
 };
 
-let state = 'CLEAVAGE';
+let state = 'SCANNING';
 let repair_choice = null;
 let repair_progress = 0;
-let cas9_pos = 220;
-let target_pos = 220;
-let show_break = true;
+let cas9_pos = 150;
+let target_pos = 150;
+let show_break = false;
 let stateTimer = 0;
 let lastTimestamp = Date.now();
 
@@ -177,28 +177,28 @@ function draw() {
   const breakY = 100 + 9 * 30;
   for (let i = 0; i < 18; i++) {
     const y = 100 + i * 30;
-    const rot = time * 1.2 + i * 0.45;
+    const rot = time * 1.05 + i * 0.4;
     const sin = Math.sin(rot);
     const cos = Math.cos(rot);
-    const lx = cx + sin * 72;
-    const rx = cx - sin * 72;
-    const isBreaking = i > 7 && i < 10;
-    const gap = isBreaking ? (state === 'FIXING' ? 36 - repair_progress * 0.18 : 46) : 0;
+    const lx = cx + sin * 76;
+    const rx = cx - sin * 76;
+    const isBreaking = i === 8 || i === 9;
+    const gap = isBreaking ? (state === 'FIXING' ? 84 - repair_progress * 0.8 : 96) : 0;
 
-    ctx.lineWidth = isBreaking ? 5 : 3;
+    ctx.lineWidth = isBreaking ? 6 : 4;
     ctx.strokeStyle = cos > 0 ? DEEP_RED : PRIMARY_BLUE;
     ctx.beginPath();
-    ctx.moveTo(lx - gap * 0.5, y);
-    ctx.lineTo(rx + gap * 0.5, y);
+    ctx.moveTo(lx - gap * 0.55, y);
+    ctx.lineTo(rx + gap * 0.55, y);
     ctx.stroke();
 
-    ctx.fillStyle = cos > 0 ? '#FF7A7A' : '#7CC3FF';
-    ctx.beginPath(); ctx.arc(lx - gap * 0.5, y, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx + gap * 0.5, y, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = cos > 0 ? '#D9362A' : '#1E6FAA';
+    ctx.beginPath(); ctx.arc(lx - gap * 0.55, y, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rx + gap * 0.55, y, 6, 0, Math.PI * 2); ctx.fill();
 
     if (!isBreaking) {
       ctx.strokeStyle = VIBRANT_YELLOW;
-      ctx.lineWidth = 1.1;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.moveTo(lx, y);
       ctx.lineTo(rx, y);
@@ -212,35 +212,35 @@ function draw() {
     ctx.shadowColor = 'rgba(255, 215, 110, 0.65)';
     ctx.fillStyle = 'rgba(255, 245, 210, 0.12)';
     ctx.beginPath();
-    ctx.arc(cx, breakY, 62, 0, Math.PI * 2);
+    ctx.arc(cx, breakY, 72, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 240, 200, 0.95)';
+    ctx.strokeStyle = 'rgba(255, 245, 180, 0.95)';
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(cx, breakY, 18, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(cx - 24, breakY - 24);
-    ctx.lineTo(cx + 24, breakY + 24);
-    ctx.moveTo(cx - 24, breakY + 24);
-    ctx.lineTo(cx + 24, breakY - 24);
+    ctx.moveTo(cx - 34, breakY - 34);
+    ctx.lineTo(cx + 34, breakY + 34);
+    ctx.moveTo(cx - 34, breakY + 34);
+    ctx.lineTo(cx + 34, breakY - 34);
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = WHITE;
-    ctx.font = 'bold 18px "Courier New"';
-    ctx.fillText('CUT SITE', cx - 46, breakY + 54);
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.font = 'bold 16px "Courier New"';
+    ctx.fillText('DOUBLE-STRAND BREAK', cx - 100, breakY + 72);
+    ctx.restore();
   }
 
   if (state === 'BINDING') {
     ctx.fillStyle = GLOW_BLUE;
     ctx.font = 'bold 24px "Courier New"';
-    ctx.fillText('CUTTING SEQUENCE...', 520, 120);
+    ctx.fillText('TARGETING AND BINDING', 520, 120);
   }
+
+  drawDonorTemplate();
 
   // --- CAS9 PROTEIN ---
   ctx.save();
@@ -351,8 +351,6 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 function drawRepairActors(choice, stateTimer, time) {
   const targetX = 500;
   const breakY = 100 + 9 * 30;
-
-  drawDonorTemplate(time);
 
   if (show_break) {
     ctx.save();
