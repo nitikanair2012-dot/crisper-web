@@ -51,6 +51,15 @@ let repair_progress = 0;
 let cas9_pos = 150;
 let target_pos = 150;
 let show_break = false;
+let stateTimer = 0;
+let lastTimestamp = Date.now();
+
+function enterState(newState) {
+  state = newState;
+  stateTimer = 0;
+  if (newState !== 'FIXING') repair_choice = null;
+  show_break = newState === 'CLEAVAGE' || newState === 'FIXING';
+}
 
 // --- FIXED INPUT HANDLING ---
 canvas.addEventListener('click', (e) => {
@@ -62,23 +71,28 @@ canvas.addEventListener('click', (e) => {
   
   // Nav buttons logic
   if (y > 620) {
-    if (x > 30 && x < 170) { state = 'SCANNING'; show_break = false; repair_choice = null; }
-    else if (x > 180 && x < 320) { state = 'BINDING'; }
-    else if (x > 330 && x < 470) { state = 'CLEAVAGE'; show_break = true; }
+    if (x > 30 && x < 170) { enterState('SCANNING'); }
+    else if (x > 180 && x < 320) { enterState('BINDING'); }
+    else if (x > 330 && x < 470) { enterState('CLEAVAGE'); }
   }
   
   // Repair choices logic
   if (state === 'CLEAVAGE' && x > PANEL_X + 20 && x < PANEL_X + 320) {
-    if (y > PANEL_Y + PANEL_H - 140 && y < PANEL_Y + PANEL_H - 90) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; }
-    if (y > PANEL_Y + PANEL_H - 70 && y < PANEL_Y + PANEL_H - 20) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; }
+    if (y > PANEL_Y + PANEL_H - 140 && y < PANEL_Y + PANEL_H - 90) { enterState('FIXING'); repair_choice = 'NHEJ'; repair_progress = 0; }
+    if (y > PANEL_Y + PANEL_H - 70 && y < PANEL_Y + PANEL_H - 20) { enterState('FIXING'); repair_choice = 'HDR'; repair_progress = 0; }
   }
 });
 
 function draw() {
+  const now = Date.now();
+  const dt = Math.min(0.04, (now - lastTimestamp) / 1000);
+  lastTimestamp = now;
+  stateTimer += dt;
+
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 
-  const time = Date.now() * 0.002;
+  const time = now * 0.002;
   const currentData = SCIENCE_LOG[state] || SCIENCE_LOG.SCANNING;
 
   // Background with gradient
@@ -129,9 +143,14 @@ function draw() {
   if (state === 'SCANNING') {
     if (Math.random() < 0.01) target_pos = 150 + Math.random() * 300;
     cas9_pos += (target_pos - cas9_pos) * 0.05;
+  } else if (state === 'BINDING') {
+    cas9_pos += (target_pos - cas9_pos) * 0.08;
+    if (stateTimer > 1.6) {
+      enterState('CLEAVAGE');
+    }
   } else if (state === 'FIXING') {
     repair_progress += 0.8;
-    if (repair_progress >= 100) { state = repair_choice; show_break = false; }
+    if (repair_progress >= 100) { enterState(repair_choice); }
   } else {
     cas9_pos += (300 - cas9_pos) * 0.1;
   }
@@ -164,6 +183,13 @@ function draw() {
     ctx.fillStyle = cos > 0 ? '#FF6666' : PRIMARY_BLUE; // Red nucleotides on one side
     ctx.beginPath(); ctx.arc(lx - gap, y, size, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(rx + gap, y, size, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // --- Cutting hint during binding ---
+  if (state === 'BINDING') {
+    ctx.fillStyle = NEON_TEAL;
+    ctx.font = 'bold 24px "Courier New"';
+    ctx.fillText('CUTTING SEQUENCE...', 520, 120);
   }
 
   // --- CAS9 PROTEIN ---
@@ -237,6 +263,10 @@ function draw() {
     drawButton(PANEL_X + 20, PANEL_Y + PANEL_H - 70, 300, 50, 'HDR REPAIR', PRIMARY_BLUE);
   }
 
+  if (state === 'FIXING') {
+    drawRepairActors(repair_choice, stateTimer, time);
+  }
+
   // --- NAV BUTTONS (BOTTOM) ---
   drawButton(30, 620, 140, 50, 'SCAN', state === 'SCANNING' ? PRIMARY_BLUE : 'grey');
   drawButton(180, 620, 140, 50, 'BIND', state === 'BINDING' ? PRIMARY_BLUE : 'grey');
@@ -266,6 +296,45 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
     currentY += lineHeight;
   }
   return currentY;
+}
+
+function drawRepairActors(choice, stateTimer, time) {
+  const targetX = 500;
+  const targetY = 360;
+
+  if (choice === 'NHEJ') {
+    for (let i = 0; i < 5; i++) {
+      const progress = Math.min(1, stateTimer / 2 + i * 0.08);
+      const sx = 140 + (targetX - 140) * progress;
+      const sy = 280 + i * 18 + Math.sin(time * 3 + i) * 4;
+      ctx.fillStyle = 'rgba(255, 200, 80, 0.9)';
+      ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(sx - 10, sy + 12, 20, 4);
+    }
+    ctx.fillStyle = WHITE;
+    ctx.font = '13px "Courier New"';
+    ctx.fillText('Repair enzymes inbound', PANEL_X + 20, PANEL_Y + PANEL_H - 168);
+  }
+
+  if (choice === 'HDR') {
+    const progress = Math.min(1, stateTimer / 2);
+    const px = PANEL_X + PANEL_W + 80 - 180 * progress;
+    const py = 280;
+    ctx.fillStyle = 'rgba(20, 120, 180, 0.22)';
+    ctx.fillRect(px - 72, py - 22, 120, 44);
+    ctx.fillStyle = 'rgba(0, 190, 255, 0.18)';
+    ctx.fillRect(px - 64, py - 16, 108, 32);
+    ctx.strokeStyle = PRIMARY_BLUE;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(targetX + 12, targetY - 10);
+    ctx.stroke();
+    ctx.fillStyle = WHITE;
+    ctx.font = '12px "Courier New"';
+    ctx.fillText('donor template', px - 50, py + 4);
+  }
 }
 
 function drawButton(x, y, w, h, label, color) {
