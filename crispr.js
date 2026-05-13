@@ -152,7 +152,7 @@ function draw() {
   ctx.shadowBlur = 20;
   ctx.shadowColor = PRIMARY_BLUE;
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 32px "Orbitron"';
+  ctx.font = 'bold 32px "Audiowide"';
   ctx.fillText('CRISPR-CAS9 // GENE EDIT', 50, 60);
   ctx.shadowBlur = 0;
 
@@ -182,19 +182,22 @@ function draw() {
     const cos = Math.cos(rot);
     const lx = cx + sin * 76;
     const rx = cx - sin * 76;
-    const isBreaking = i === 8 || i === 9;
-    const gap = isBreaking ? (state === 'FIXING' ? 84 - repair_progress * 0.8 : 96) : 0;
+const isBreaking = i >= 7 && i <= 10;
+  const edgeGap = isBreaking ? 12 + Math.abs(9 - i) * 8 : 0;
+  const splitGap = isBreaking ? (state === 'FIXING' ? 120 - repair_progress : 136) : 0;
+  const leftX = lx - splitGap * 0.55 - edgeGap;
+  const rightX = rx + splitGap * 0.55 + edgeGap;
 
-    ctx.lineWidth = isBreaking ? 6 : 4;
-    ctx.strokeStyle = cos > 0 ? DEEP_RED : PRIMARY_BLUE;
-    ctx.beginPath();
-    ctx.moveTo(lx - gap * 0.55, y);
-    ctx.lineTo(rx + gap * 0.55, y);
-    ctx.stroke();
+  ctx.lineWidth = isBreaking ? 6 : 4;
+  ctx.strokeStyle = cos > 0 ? DEEP_RED : PRIMARY_BLUE;
+  ctx.beginPath();
+  ctx.moveTo(leftX, y);
+  ctx.lineTo(rightX, y);
+  ctx.stroke();
 
-    ctx.fillStyle = cos > 0 ? '#D9362A' : '#1E6FAA';
-    ctx.beginPath(); ctx.arc(lx - gap * 0.55, y, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx + gap * 0.55, y, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = cos > 0 ? '#D9362A' : '#1E6FAA';
+  ctx.beginPath(); ctx.arc(leftX, y, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(rightX, y, 6, 0, Math.PI * 2); ctx.fill();
 
     if (!isBreaking) {
       ctx.strokeStyle = VIBRANT_YELLOW;
@@ -229,18 +232,16 @@ function draw() {
 
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.font = 'bold 16px "Courier New"';
+    ctx.font = 'bold 16px "Share Tech Mono"';
     ctx.fillText('DOUBLE-STRAND BREAK', cx - 100, breakY + 72);
     ctx.restore();
   }
 
   if (state === 'BINDING') {
     ctx.fillStyle = GLOW_BLUE;
-    ctx.font = 'bold 24px "Courier New"';
+    ctx.font = 'bold 24px "Share Tech Mono"';
     ctx.fillText('TARGETING AND BINDING', 520, 120);
   }
-
-  drawDonorTemplate();
 
   // --- CAS9 PROTEIN ---
   ctx.save();
@@ -292,13 +293,13 @@ function draw() {
   ctx.strokeRect(PANEL_X + 2, PANEL_Y + 2, PANEL_W - 4, 42);
 
   ctx.fillStyle = VIBRANT_YELLOW;
-  ctx.font = 'bold 18px "Courier New"';
+  ctx.font = 'bold 18px "Share Tech Mono"';
   ctx.fillText(currentData.title, PANEL_X + 20, PANEL_Y + 30);
 
   ctx.fillStyle = WHITE;
   ctx.shadowBlur = 4;
   ctx.shadowColor = 'rgba(45, 241, 217, 0.16)';
-  ctx.font = '14px "Orbitron"';
+  ctx.font = '14px "Share Tech Mono"';
 
   let textY = PANEL_Y + 75;
   currentData.body.forEach(line => {
@@ -384,7 +385,7 @@ function drawRepairActors(choice, stateTimer, time) {
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 12px "Orbitron"';
+  ctx.font = 'bold 12px "Share Tech Mono"';
   ctx.fillText('gRNA guide', 360, cas9_pos + 4);
   ctx.restore();
 
@@ -402,7 +403,7 @@ function drawRepairActors(choice, stateTimer, time) {
       ctx.fillRect(sx - 10, sy + 16, 20, 4);
     }
     ctx.fillStyle = WHITE;
-    ctx.font = '13px "Courier New"';
+    ctx.font = '13px "Share Tech Mono"';
     ctx.fillText('NHEJ repair machinery', PANEL_X + 20, PANEL_Y + PANEL_H - 168);
   }
 
@@ -414,8 +415,9 @@ function drawRepairActors(choice, stateTimer, time) {
     ctx.lineWidth = 1.8;
     ctx.strokeRect(PANEL_X + 12, PANEL_Y + 160, 316, 80);
     ctx.fillStyle = WHITE;
-    ctx.font = '12px "Courier New"';
+    ctx.font = '12px "Share Tech Mono"';
     ctx.fillText('HDR donor template is aligned to the cut site', PANEL_X + 24, PANEL_Y + 188);
+    drawDonorTemplate();
   }
 }
 
@@ -432,7 +434,7 @@ function drawEnzymeIcon(x, y, color, time, label) {
   ctx.arc(x + 6, y - 2, 6, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = DARK_BG;
-  ctx.font = 'bold 12px "Orbitron"';
+  ctx.font = 'bold 12px "Share Tech Mono"';
   ctx.fillText(label, x - 16, y + 4);
   ctx.restore();
 }
@@ -455,9 +457,9 @@ function drawDonorTemplate(time) {
   ctx.roundRect(x, y, w, h, 14);
   ctx.stroke();
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 13px "Courier New"';
+  ctx.font = 'bold 13px "Share Tech Mono"';
   ctx.fillText('DONOR TEMPLATE', x + 14, y + 24);
-  ctx.font = '12px "Courier New"';
+  ctx.font = '12px "Share Tech Mono"';
   ctx.fillStyle = 'rgba(255,255,255,0.82)';
   ctx.fillText('5\' - A A T C G - 3\'', x + 14, y + 46);
   ctx.fillText('3\' - T T A G C - 5\'', x + 14, y + 66);
@@ -477,7 +479,7 @@ function drawDonorTemplate(time) {
   ctx.lineTo(492, 378);
   ctx.fill();
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 12px "Courier New"';
+  ctx.font = 'bold 12px "Share Tech Mono"';
   ctx.fillText('HDR template', x + 14, y - 8);
 }
 
@@ -543,7 +545,7 @@ function drawButton(x, y, w, h, label, color) {
   ctx.fill();
   
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 14px "Courier New"';
+  ctx.font = 'bold 14px "Share Tech Mono"';
   ctx.fillText(label, x + 18, y + h / 2 + 6);
 }
 
