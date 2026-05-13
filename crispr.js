@@ -20,12 +20,21 @@ resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
 // --- UPDATED THEME COLORS (White & Blue) ---
-const DARK_BG = '#050A15';
-const PRIMARY_BLUE = '#00B4FF'; // Brighter cyan-blue
-const SOFT_BLUE = '#A0D8EF';
+const DARK_BG = '#030A14';
+const PRIMARY_BLUE = '#00B8FF'; // Brighter cyan-blue
+const SOFT_BLUE = '#92E7FF';
+const SCIFI_GREEN = '#5BF6D1';
+const NEON_TEAL = '#2DF1D9';
+const PANEL_BORDER = 'rgba(45, 241, 217, 0.5)';
+const PANEL_GLOW = 'rgba(45, 241, 217, 0.18)';
 const WHITE = '#FFFFFF';
-const GLASS_WHITE = 'rgba(255, 255, 255, 0.1)';
+const GLASS_WHITE = 'rgba(255, 255, 255, 0.08)';
 const ENZYME_COLOR = '#FFD700'; // Cas9 stays gold for contrast
+
+const PANEL_X = 620;
+const PANEL_Y = 90;
+const PANEL_W = 340;
+const PANEL_H = 520;
 
 const SCIENCE_LOG = {
   SCANNING: { title: 'PHASE: TARGETING', body: ['In the targeting phase, the Cas9-gRNA complex scans the genome', 'to find a specific DNA sequence. It first identifies a short "tag"', 'called the PAM, which allows the protein to briefly bind and unzip', 'the DNA. If the guide RNA matches the unzipped DNA sequence,', 'they "zip" together to form an R-loop; this precise match triggers', 'a final shape change in the Cas9 protein, positioning its molecular', '"scissors" to make a cut.']},
@@ -59,9 +68,9 @@ canvas.addEventListener('click', (e) => {
   }
   
   // Repair choices logic
-  if (state === 'CLEAVAGE' && x > 600 && x < 950) {
-    if (y > 380 && y < 440) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; }
-    if (y > 460 && y < 520) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; }
+  if (state === 'CLEAVAGE' && x > PANEL_X + 20 && x < PANEL_X + 320) {
+    if (y > PANEL_Y + PANEL_H - 140 && y < PANEL_Y + PANEL_H - 90) { state = 'FIXING'; repair_choice = 'NHEJ'; repair_progress = 0; }
+    if (y > PANEL_Y + PANEL_H - 70 && y < PANEL_Y + PANEL_H - 20) { state = 'FIXING'; repair_choice = 'HDR'; repair_progress = 0; }
   }
 });
 
@@ -75,19 +84,36 @@ function draw() {
   // Background with gradient
   const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
   gradient.addColorStop(0, DARK_BG);
-  gradient.addColorStop(0.5, '#0A1525');
+  gradient.addColorStop(0.35, '#06111F');
+  gradient.addColorStop(0.5, '#02101B');
   gradient.addColorStop(1, DARK_BG);
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, baseWidth, baseHeight);
-  
-  // Add some glowing particles
-  for (let i = 0; i < 20; i++) {
-    const px = Math.sin(time * 0.5 + i) * 200 + 500;
-    const py = Math.cos(time * 0.3 + i) * 150 + 350;
-    const alpha = (Math.sin(time + i) + 1) * 0.3;
-    ctx.fillStyle = `rgba(0, 180, 255, ${alpha})`;
+
+  // Grid overlay
+  ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx <= baseWidth; gx += 50) {
     ctx.beginPath();
-    ctx.arc(px, py, 2, 0, Math.PI * 2);
+    ctx.moveTo(gx, 0);
+    ctx.lineTo(gx, baseHeight);
+    ctx.stroke();
+  }
+  for (let gy = 0; gy <= baseHeight; gy += 50) {
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(baseWidth, gy);
+    ctx.stroke();
+  }
+
+  // Add some glowing particles
+  for (let i = 0; i < 26; i++) {
+    const px = Math.sin(time * 0.4 + i * 0.9) * 320 + 500;
+    const py = Math.cos(time * 0.6 + i * 0.7) * 220 + 350;
+    const alpha = (Math.sin(time + i * 1.3) + 1) * 0.15;
+    ctx.fillStyle = `rgba(45, 241, 217, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(px, py, 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -172,32 +198,43 @@ function draw() {
   ctx.fillText("CAS9", 33, 55);
   ctx.restore();
 
-  ctx.fillStyle = 'rgba(20, 30, 50, 0.9)';
-  ctx.strokeStyle = PRIMARY_BLUE;
-  ctx.lineWidth = 3;
-  ctx.shadowBlur = 15;
-  ctx.shadowColor = PRIMARY_BLUE;
+  ctx.fillStyle = 'rgba(4, 12, 24, 0.94)';
+  ctx.strokeStyle = PANEL_BORDER;
+  ctx.lineWidth = 2.5;
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = PANEL_GLOW;
   ctx.beginPath();
-  ctx.roundRect(30, 350, 450, 300, 15);
+  ctx.roundRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 18);
   ctx.fill(); ctx.stroke();
   ctx.shadowBlur = 0;
 
-  ctx.fillStyle = PRIMARY_BLUE;
-  ctx.font = 'bold 20px "Courier New"';
-  ctx.fillText(currentData.title, 50, 390);
+  // Panel top bar
+  ctx.fillStyle = 'rgba(6, 20, 40, 0.95)';
+  ctx.fillRect(PANEL_X + 2, PANEL_Y + 2, PANEL_W - 4, 42);
+  ctx.strokeStyle = 'rgba(45, 241, 217, 0.35)';
+  ctx.lineWidth = 1.8;
+  ctx.strokeRect(PANEL_X + 2, PANEL_Y + 2, PANEL_W - 4, 42);
+
+  ctx.fillStyle = SCIFI_GREEN;
+  ctx.font = 'bold 18px "Courier New"';
+  ctx.fillText(currentData.title, PANEL_X + 20, PANEL_Y + 30);
+
   ctx.fillStyle = WHITE;
-  ctx.shadowBlur = 5;
-  ctx.shadowColor = PRIMARY_BLUE;
-  ctx.font = '16px "Courier New"';
-  currentData.body.forEach((line, idx) => {
-    ctx.fillText(line, 50, 430 + idx * 25);
+  ctx.shadowBlur = 4;
+  ctx.shadowColor = 'rgba(45, 241, 217, 0.16)';
+  ctx.font = '14px "Courier New"';
+
+  let textY = PANEL_Y + 75;
+  currentData.body.forEach(line => {
+    textY = wrapText(ctx, line, PANEL_X + 20, textY, PANEL_W - 40, 24);
+    textY += 10;
   });
   ctx.shadowBlur = 0;
 
   // --- ACTION BUTTONS (CLEAVAGE STATE) ---
   if (state === 'CLEAVAGE') {
-    drawButton(600, 380, 350, 60, 'TRIGGER NHEJ REPAIR', 'red');
-    drawButton(600, 460, 350, 60, 'TRIGGER HDR REPAIR', PRIMARY_BLUE);
+    drawButton(PANEL_X + 20, PANEL_Y + PANEL_H - 140, 300, 50, 'NHEJ REPAIR', 'red');
+    drawButton(PANEL_X + 20, PANEL_Y + PANEL_H - 70, 300, 50, 'HDR REPAIR', PRIMARY_BLUE);
   }
 
   // --- NAV BUTTONS (BOTTOM) ---
@@ -208,32 +245,54 @@ function draw() {
   requestAnimationFrame(draw);
 }
 
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  let currentY = y;
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line ? `${line} ${words[n]}` : words[n];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && line) {
+      ctx.fillText(line, x, currentY);
+      line = words[n];
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) {
+    ctx.fillText(line, x, currentY);
+    currentY += lineHeight;
+  }
+  return currentY;
+}
+
 function drawButton(x, y, w, h, label, color) {
   // Button glow
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = 16;
   ctx.shadowColor = color;
   
   // Button background with gradient
   const btnGradient = ctx.createLinearGradient(x, y, x, y + h);
-  btnGradient.addColorStop(0, 'rgba(255,255,255,0.1)');
-  btnGradient.addColorStop(1, 'rgba(255,255,255,0.05)');
+  btnGradient.addColorStop(0, 'rgba(15, 40, 65, 0.96)');
+  btnGradient.addColorStop(1, 'rgba(10, 24, 42, 0.96)');
   ctx.fillStyle = btnGradient;
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2.8;
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 8);
+  ctx.roundRect(x, y, w, h, 10);
   ctx.fill(); ctx.stroke();
   
-  // Button highlight
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
   ctx.beginPath();
-  ctx.roundRect(x + 2, y + 2, w - 4, h/2 - 2, 6);
+  ctx.roundRect(x + 2, y + 2, w - 4, h / 2 - 2, 8);
   ctx.fill();
   
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 16px "Courier New"';
-  ctx.fillText(label, x + 20, y + h/2 + 6);
+  ctx.font = 'bold 14px "Courier New"';
+  ctx.fillText(label, x + 18, y + h / 2 + 6);
 }
 
 draw();
