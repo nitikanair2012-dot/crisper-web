@@ -152,7 +152,7 @@ function draw() {
   ctx.shadowBlur = 20;
   ctx.shadowColor = PRIMARY_BLUE;
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 32px "Courier New"';
+  ctx.font = 'bold 32px "Orbitron"';
   ctx.fillText('CRISPR-CAS9 // GENE EDIT', 50, 60);
   ctx.shadowBlur = 0;
 
@@ -298,7 +298,7 @@ function draw() {
   ctx.fillStyle = WHITE;
   ctx.shadowBlur = 4;
   ctx.shadowColor = 'rgba(45, 241, 217, 0.16)';
-  ctx.font = '14px "Courier New"';
+  ctx.font = '14px "Orbitron"';
 
   let textY = PANEL_Y + 75;
   currentData.body.forEach(line => {
@@ -384,7 +384,7 @@ function drawRepairActors(choice, stateTimer, time) {
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = WHITE;
-  ctx.font = 'bold 12px "Courier New"';
+  ctx.font = 'bold 12px "Orbitron"';
   ctx.fillText('gRNA guide', 360, cas9_pos + 4);
   ctx.restore();
 
@@ -432,7 +432,7 @@ function drawEnzymeIcon(x, y, color, time, label) {
   ctx.arc(x + 6, y - 2, 6, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = DARK_BG;
-  ctx.font = 'bold 12px "Courier New"';
+  ctx.font = 'bold 12px "Orbitron"';
   ctx.fillText(label, x - 16, y + 4);
   ctx.restore();
 }
