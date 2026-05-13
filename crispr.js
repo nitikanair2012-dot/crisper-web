@@ -120,6 +120,8 @@ function draw() {
     ctx.stroke();
   }
 
+  drawHudExtras();
+
   // Add some glowing particles
   for (let i = 0; i < 26; i++) {
     const px = Math.sin(time * 0.4 + i * 0.9) * 320 + 500;
@@ -263,8 +265,8 @@ function draw() {
     drawButton(PANEL_X + 20, PANEL_Y + PANEL_H - 70, 300, 50, 'HDR REPAIR', PRIMARY_BLUE);
   }
 
-  if (state === 'FIXING') {
-    drawRepairActors(repair_choice, stateTimer, time);
+  if (state === 'CLEAVAGE' || state === 'FIXING') {
+    drawRepairActors(state === 'FIXING' ? repair_choice : null, stateTimer, time);
   }
 
   // --- NAV BUTTONS (BOTTOM) ---
@@ -301,40 +303,134 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 function drawRepairActors(choice, stateTimer, time) {
   const targetX = 500;
   const targetY = 360;
+  const breakY = 100 + 9 * 30;
+  const breakRot = time + 9 * 0.4;
+  const sin = Math.sin(breakRot);
+  const leftX = targetX + sin * 60;
+  const rightX = targetX - sin * 60;
+  const gap = show_break ? (state === 'FIXING' ? 50 - (repair_progress / 2) : 50) : 0;
+  const midX = (leftX + rightX) / 2;
+
+  // Draw actual break spark at the helix center
+  if (show_break) {
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = 'rgba(255, 120, 80, 0.9)';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 8; i++) {
+      const angle = i * Math.PI / 4 + time * 1.8;
+      const radius = 18 + Math.sin(time * 6 + i) * 3;
+      ctx.beginPath();
+      ctx.moveTo(midX, breakY);
+      ctx.lineTo(midX + Math.cos(angle) * radius, breakY + Math.sin(angle) * radius);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255, 210, 110, 0.98)';
+    ctx.beginPath();
+    ctx.arc(midX, breakY, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Draw active cutting enzyme near the break site
+  drawEnzymeIcon(targetX + 110, breakY - 80, ENZYME_COLOR, time, 'CAS9');
 
   if (choice === 'NHEJ') {
     for (let i = 0; i < 5; i++) {
       const progress = Math.min(1, stateTimer / 2 + i * 0.08);
       const sx = 140 + (targetX - 140) * progress;
-      const sy = 280 + i * 18 + Math.sin(time * 3 + i) * 4;
-      ctx.fillStyle = 'rgba(255, 200, 80, 0.9)';
-      ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillRect(sx - 10, sy + 12, 20, 4);
+      const sy = 240 + i * 24 + Math.sin(time * 3 + i) * 5;
+      ctx.fillStyle = 'rgba(255, 190, 70, 0.95)';
+      ctx.beginPath(); ctx.arc(sx, sy, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 230, 160, 0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx, sy, 15, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(sx - 10, sy + 16, 20, 4);
     }
     ctx.fillStyle = WHITE;
     ctx.font = '13px "Courier New"';
-    ctx.fillText('Repair enzymes inbound', PANEL_X + 20, PANEL_Y + PANEL_H - 168);
+    ctx.fillText('NHEJ enzymes approaching', PANEL_X + 20, PANEL_Y + PANEL_H - 168);
   }
 
   if (choice === 'HDR') {
     const progress = Math.min(1, stateTimer / 2);
-    const px = PANEL_X + PANEL_W + 80 - 180 * progress;
-    const py = 280;
-    ctx.fillStyle = 'rgba(20, 120, 180, 0.22)';
-    ctx.fillRect(px - 72, py - 22, 120, 44);
-    ctx.fillStyle = 'rgba(0, 190, 255, 0.18)';
-    ctx.fillRect(px - 64, py - 16, 108, 32);
-    ctx.strokeStyle = PRIMARY_BLUE;
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(targetX + 12, targetY - 10);
-    ctx.stroke();
-    ctx.fillStyle = WHITE;
+    const px = PANEL_X + PANEL_W + 100 - 240 * progress;
+    const py = 260;
+    const boxW = 120;
+    const boxH = 50;
+    ctx.fillStyle = 'rgba(0, 210, 255, 0.16)';
+    ctx.fillRect(px - boxW / 2, py - boxH / 2, boxW, boxH);
+    ctx.strokeStyle = 'rgba(0, 220, 255, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px - boxW / 2, py - boxH / 2, boxW, boxH);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.font = '12px "Courier New"';
-    ctx.fillText('donor template', px - 50, py + 4);
+    ctx.fillText('HDR donor', px - 26, py + 5);
+    ctx.strokeStyle = NEON_TEAL;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px - boxW / 2, py);
+    ctx.lineTo(midX, breakY - 10);
+    ctx.stroke();
   }
+}
+
+function drawEnzymeIcon(x, y, color, time, label) {
+  ctx.save();
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = color;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(x, y, 22, 14, Math.sin(time) * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.beginPath();
+  ctx.arc(x + 6, y - 2, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = DARK_BG;
+  ctx.font = 'bold 12px "Courier New"';
+  ctx.fillText(label, x - 16, y + 4);
+  ctx.restore();
+}
+
+function drawHudExtras() {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(45, 241, 217, 0.35)';
+  ctx.lineWidth = 2;
+
+  // top left mini HUD
+  ctx.strokeRect(38, 78, 184, 44);
+  ctx.strokeRect(44, 86, 80, 14);
+  ctx.strokeRect(44, 108, 120, 10);
+
+  // top center accent
+  ctx.beginPath();
+  ctx.moveTo(420, 40);
+  ctx.lineTo(480, 40);
+  ctx.moveTo(520, 40);
+  ctx.lineTo(580, 40);
+  ctx.stroke();
+
+  // right side small vertical panel
+  ctx.beginPath();
+  ctx.moveTo(930, 120);
+  ctx.lineTo(930, 520);
+  for (let i = 0; i < 7; i++) {
+    ctx.moveTo(930, 140 + i * 60);
+    ctx.lineTo(958, 140 + i * 60);
+  }
+  ctx.stroke();
+
+  // left helix accent
+  ctx.setLineDash([6, 8]);
+  ctx.beginPath();
+  ctx.moveTo(180, 80);
+  ctx.lineTo(180, 560);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.restore();
 }
 
 function drawButton(x, y, w, h, label, color) {
