@@ -410,14 +410,14 @@ function drawRepairActors(choice, stateTimer, time) {
   if (choice === 'HDR') {
     const progress = Math.min(1, stateTimer / 2);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.fillRect(PANEL_X + 12, PANEL_Y + 160, 316, 80);
+    ctx.fillRect(PANEL_X + 12, PANEL_Y + 160, 316, 130);
     ctx.strokeStyle = 'rgba(255, 210, 90, 0.25)';
     ctx.lineWidth = 1.8;
-    ctx.strokeRect(PANEL_X + 12, PANEL_Y + 160, 316, 80);
+    ctx.strokeRect(PANEL_X + 12, PANEL_Y + 160, 316, 130);
     ctx.fillStyle = WHITE;
     ctx.font = '12px "Share Tech Mono"';
-    ctx.fillText('HDR donor template is aligned to the cut site', PANEL_X + 24, PANEL_Y + 188);
-    drawDonorTemplate();
+    wrapText(ctx, 'HDR donor template is aligned to the cut site', PANEL_X + 24, PANEL_Y + 186, 280, 18);
+    drawDonorTemplate(PANEL_X + 20, PANEL_Y + 210);
   }
 }
 
@@ -439,9 +439,7 @@ function drawEnzymeIcon(x, y, color, time, label) {
   ctx.restore();
 }
 
-function drawDonorTemplate(time) {
-  const x = 100;
-  const y = 130;
+function drawDonorTemplate(x = 20, y = 130) {
   const w = 200;
   const h = 100;
   ctx.save();
