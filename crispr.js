@@ -20,16 +20,16 @@ resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
 // --- UPDATED THEME COLORS (White & Blue) ---
-const DARK_BG = '#030A14';
-const PRIMARY_BLUE = '#00B8FF'; // Brighter cyan-blue
-const SOFT_BLUE = '#92E7FF';
-const SCIFI_GREEN = '#5BF6D1';
-const NEON_TEAL = '#2DF1D9';
-const PANEL_BORDER = 'rgba(45, 241, 217, 0.5)';
-const PANEL_GLOW = 'rgba(45, 241, 217, 0.18)';
+const DARK_BG = '#050A18';
+const PRIMARY_BLUE = '#0D3F8B';
+const DEEP_RED = '#E51F29';
+const VIBRANT_YELLOW = '#FFD23A';
+const GLOW_BLUE = '#58B5FF';
+const PANEL_BORDER = 'rgba(255, 210, 90, 0.28)';
+const PANEL_GLOW = 'rgba(255, 210, 90, 0.14)';
 const WHITE = '#FFFFFF';
 const GLASS_WHITE = 'rgba(255, 255, 255, 0.08)';
-const ENZYME_COLOR = '#FFD700'; // Cas9 stays gold for contrast
+const ENZYME_COLOR = VIBRANT_YELLOW;
 
 const PANEL_X = 620;
 const PANEL_Y = 90;
@@ -45,12 +45,12 @@ const SCIENCE_LOG = {
   HDR: { title: 'RESULT: HDR', body: ['HDR is the "precise" repair route that uses a matching DNA template', 'to fix the break. By providing a custom template, scientists can guide', 'the cell to rewrite the genetic code, allowing for the knock-in of', 'specific new sequences or the correction of mutations.']}
 };
 
-let state = 'SCANNING';
+let state = 'CLEAVAGE';
 let repair_choice = null;
 let repair_progress = 0;
-let cas9_pos = 150;
-let target_pos = 150;
-let show_break = false;
+let cas9_pos = 220;
+let target_pos = 220;
+let show_break = true;
 let stateTimer = 0;
 let lastTimestamp = Date.now();
 
@@ -104,32 +104,47 @@ function draw() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, baseWidth, baseHeight);
 
-  // Grid overlay
-  ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
+  // High-tech laboratory background details
+  ctx.save();
+  ctx.strokeStyle = 'rgba(90, 150, 255, 0.10)';
   ctx.lineWidth = 1;
-  for (let gx = 0; gx <= baseWidth; gx += 50) {
+  for (let i = 0; i < 5; i++) {
+    const x = 80 + i * 180;
     ctx.beginPath();
-    ctx.moveTo(gx, 0);
-    ctx.lineTo(gx, baseHeight);
+    ctx.moveTo(x, 40);
+    ctx.lineTo(x, baseHeight - 40);
     ctx.stroke();
   }
-  for (let gy = 0; gy <= baseHeight; gy += 50) {
+  for (let i = 0; i < 4; i++) {
+    const y = 120 + i * 140;
     ctx.beginPath();
-    ctx.moveTo(0, gy);
-    ctx.lineTo(baseWidth, gy);
+    ctx.moveTo(40, y);
+    ctx.lineTo(baseWidth - 40, y);
     ctx.stroke();
   }
+  ctx.globalAlpha = 0.18;
+  for (let i = 0; i < 18; i++) {
+    const bx = 120 + (i % 6) * 140 + Math.cos(time * 0.5 + i) * 12;
+    const by = 90 + Math.floor(i / 6) * 150 + Math.sin(time * 0.7 + i) * 8;
+    const radius = 8 + (i % 3) * 3;
+    const alpha = 0.08 + Math.abs(Math.sin(time + i * 0.9)) * 0.12;
+    ctx.fillStyle = `rgba(80, 170, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(bx, by, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 
   drawHudExtras();
 
-  // Add some glowing particles
-  for (let i = 0; i < 26; i++) {
-    const px = Math.sin(time * 0.4 + i * 0.9) * 320 + 500;
-    const py = Math.cos(time * 0.6 + i * 0.7) * 220 + 350;
-    const alpha = (Math.sin(time + i * 1.3) + 1) * 0.15;
-    ctx.fillStyle = `rgba(45, 241, 217, ${alpha})`;
+  // Add subtle glow particles for bloom
+  for (let i = 0; i < 14; i++) {
+    const px = Math.sin(time * 0.35 + i * 1.1) * 320 + 500;
+    const py = Math.cos(time * 0.55 + i * 0.9) * 220 + 350;
+    const alpha = 0.06 + (Math.sin(time + i * 1.2) + 1) * 0.06;
+    ctx.fillStyle = `rgba(255, 210, 90, ${alpha})`;
     ctx.beginPath();
-    ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -159,37 +174,70 @@ function draw() {
 
   // --- 3D HELIX DRAWING ---
   const cx = 500;
+  const breakY = 100 + 9 * 30;
   for (let i = 0; i < 18; i++) {
     const y = 100 + i * 30;
-    const rot = time + i * 0.4;
+    const rot = time * 1.2 + i * 0.45;
     const sin = Math.sin(rot);
     const cos = Math.cos(rot);
-    
-    // Perspective sizing
-    const size = 6 + cos * 3;
-    const lx = cx + sin * 60;
-    const rx = cx - sin * 60;
+    const lx = cx + sin * 72;
+    const rx = cx - sin * 72;
+    const isBreaking = i > 7 && i < 10;
+    const gap = isBreaking ? (state === 'FIXING' ? 36 - repair_progress * 0.18 : 46) : 0;
 
-    const isBreaking = show_break && i > 7 && i < 11;
-    const gap = isBreaking ? (state === 'FIXING' ? 50 - (repair_progress/2) : 50) : 0;
-
-    // Draw Strands
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = cos > 0 ? '#FF4444' : SOFT_BLUE; // One strand red
+    ctx.lineWidth = isBreaking ? 5 : 3;
+    ctx.strokeStyle = cos > 0 ? DEEP_RED : PRIMARY_BLUE;
     ctx.beginPath();
-    ctx.moveTo(lx - gap, y);
-    ctx.lineTo(rx + gap, y);
+    ctx.moveTo(lx - gap * 0.5, y);
+    ctx.lineTo(rx + gap * 0.5, y);
     ctx.stroke();
 
-    // Draw Nucleotides (3D spheres)
-    ctx.fillStyle = cos > 0 ? '#FF6666' : PRIMARY_BLUE; // Red nucleotides on one side
-    ctx.beginPath(); ctx.arc(lx - gap, y, size, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx + gap, y, size, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = cos > 0 ? '#FF7A7A' : '#7CC3FF';
+    ctx.beginPath(); ctx.arc(lx - gap * 0.5, y, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rx + gap * 0.5, y, 7, 0, Math.PI * 2); ctx.fill();
+
+    if (!isBreaking) {
+      ctx.strokeStyle = VIBRANT_YELLOW;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(lx, y);
+      ctx.lineTo(rx, y);
+      ctx.stroke();
+    }
   }
 
-  // --- Cutting hint during binding ---
+  if (show_break) {
+    ctx.save();
+    ctx.shadowBlur = 34;
+    ctx.shadowColor = 'rgba(255, 215, 110, 0.65)';
+    ctx.fillStyle = 'rgba(255, 245, 210, 0.12)';
+    ctx.beginPath();
+    ctx.arc(cx, breakY, 62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 240, 200, 0.95)';
+    ctx.beginPath();
+    ctx.arc(cx, breakY, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - 24, breakY - 24);
+    ctx.lineTo(cx + 24, breakY + 24);
+    ctx.moveTo(cx - 24, breakY + 24);
+    ctx.lineTo(cx + 24, breakY - 24);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = WHITE;
+    ctx.font = 'bold 18px "Courier New"';
+    ctx.fillText('CUT SITE', cx - 46, breakY + 54);
+  }
+
   if (state === 'BINDING') {
-    ctx.fillStyle = NEON_TEAL;
+    ctx.fillStyle = GLOW_BLUE;
     ctx.font = 'bold 24px "Courier New"';
     ctx.fillText('CUTTING SEQUENCE...', 520, 120);
   }
@@ -243,7 +291,7 @@ function draw() {
   ctx.lineWidth = 1.8;
   ctx.strokeRect(PANEL_X + 2, PANEL_Y + 2, PANEL_W - 4, 42);
 
-  ctx.fillStyle = SCIFI_GREEN;
+  ctx.fillStyle = VIBRANT_YELLOW;
   ctx.font = 'bold 18px "Courier New"';
   ctx.fillText(currentData.title, PANEL_X + 20, PANEL_Y + 30);
 
@@ -302,47 +350,54 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 
 function drawRepairActors(choice, stateTimer, time) {
   const targetX = 500;
-  const targetY = 360;
   const breakY = 100 + 9 * 30;
-  const breakRot = time + 9 * 0.4;
-  const sin = Math.sin(breakRot);
-  const leftX = targetX + sin * 60;
-  const rightX = targetX - sin * 60;
-  const gap = show_break ? (state === 'FIXING' ? 50 - (repair_progress / 2) : 50) : 0;
-  const midX = (leftX + rightX) / 2;
 
-  // Draw actual break spark at the helix center
+  drawDonorTemplate(time);
+
   if (show_break) {
     ctx.save();
     ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = 'rgba(255, 120, 80, 0.9)';
+    ctx.strokeStyle = 'rgba(255, 220, 120, 0.9)';
     ctx.lineWidth = 3;
     for (let i = 0; i < 8; i++) {
-      const angle = i * Math.PI / 4 + time * 1.8;
+      const angle = i * Math.PI / 4 + time * 1.7;
       const radius = 18 + Math.sin(time * 6 + i) * 3;
       ctx.beginPath();
-      ctx.moveTo(midX, breakY);
-      ctx.lineTo(midX + Math.cos(angle) * radius, breakY + Math.sin(angle) * radius);
+      ctx.moveTo(targetX, breakY);
+      ctx.lineTo(targetX + Math.cos(angle) * radius, breakY + Math.sin(angle) * radius);
       ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(255, 210, 110, 0.98)';
+    ctx.fillStyle = 'rgba(255, 245, 200, 0.96)';
     ctx.beginPath();
-    ctx.arc(midX, breakY, 12, 0, Math.PI * 2);
+    ctx.arc(targetX, breakY, 12, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
-  // Draw active cutting enzyme near the break site
-  drawEnzymeIcon(targetX + 110, breakY - 80, ENZYME_COLOR, time, 'CAS9');
+  drawEnzymeIcon(targetX + 110, breakY - 90, ENZYME_COLOR, time, 'CAS9');
+
+  ctx.save();
+  ctx.strokeStyle = GLOW_BLUE;
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([6, 8]);
+  ctx.beginPath();
+  ctx.moveTo(targetX + 40, breakY - 45);
+  ctx.lineTo(430, cas9_pos + 12);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = WHITE;
+  ctx.font = 'bold 12px "Courier New"';
+  ctx.fillText('gRNA guide', 360, cas9_pos + 4);
+  ctx.restore();
 
   if (choice === 'NHEJ') {
     for (let i = 0; i < 5; i++) {
       const progress = Math.min(1, stateTimer / 2 + i * 0.08);
       const sx = 140 + (targetX - 140) * progress;
       const sy = 240 + i * 24 + Math.sin(time * 3 + i) * 5;
-      ctx.fillStyle = 'rgba(255, 190, 70, 0.95)';
+      ctx.fillStyle = 'rgba(255, 180, 70, 0.92)';
       ctx.beginPath(); ctx.arc(sx, sy, 11, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 230, 160, 0.95)';
+      ctx.strokeStyle = 'rgba(255, 225, 150, 0.95)';
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(sx, sy, 15, 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = 'rgba(255,255,255,0.18)';
@@ -350,29 +405,19 @@ function drawRepairActors(choice, stateTimer, time) {
     }
     ctx.fillStyle = WHITE;
     ctx.font = '13px "Courier New"';
-    ctx.fillText('NHEJ enzymes approaching', PANEL_X + 20, PANEL_Y + PANEL_H - 168);
+    ctx.fillText('NHEJ repair machinery', PANEL_X + 20, PANEL_Y + PANEL_H - 168);
   }
 
   if (choice === 'HDR') {
     const progress = Math.min(1, stateTimer / 2);
-    const px = PANEL_X + PANEL_W + 100 - 240 * progress;
-    const py = 260;
-    const boxW = 120;
-    const boxH = 50;
-    ctx.fillStyle = 'rgba(0, 210, 255, 0.16)';
-    ctx.fillRect(px - boxW / 2, py - boxH / 2, boxW, boxH);
-    ctx.strokeStyle = 'rgba(0, 220, 255, 0.55)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(px - boxW / 2, py - boxH / 2, boxW, boxH);
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(PANEL_X + 12, PANEL_Y + 160, 316, 80);
+    ctx.strokeStyle = 'rgba(255, 210, 90, 0.25)';
+    ctx.lineWidth = 1.8;
+    ctx.strokeRect(PANEL_X + 12, PANEL_Y + 160, 316, 80);
+    ctx.fillStyle = WHITE;
     ctx.font = '12px "Courier New"';
-    ctx.fillText('HDR donor', px - 26, py + 5);
-    ctx.strokeStyle = NEON_TEAL;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(px - boxW / 2, py);
-    ctx.lineTo(midX, breakY - 10);
-    ctx.stroke();
+    ctx.fillText('HDR donor template is aligned to the cut site', PANEL_X + 24, PANEL_Y + 188);
   }
 }
 
@@ -382,9 +427,9 @@ function drawEnzymeIcon(x, y, color, time, label) {
   ctx.shadowColor = color;
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.ellipse(x, y, 22, 14, Math.sin(time) * 0.1, 0, Math.PI * 2);
+  ctx.ellipse(x, y, 22, 14, Math.sin(time) * 0.12, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
   ctx.beginPath();
   ctx.arc(x + 6, y - 2, 6, 0, Math.PI * 2);
   ctx.fill();
@@ -392,6 +437,50 @@ function drawEnzymeIcon(x, y, color, time, label) {
   ctx.font = 'bold 12px "Courier New"';
   ctx.fillText(label, x - 16, y + 4);
   ctx.restore();
+}
+
+function drawDonorTemplate(time) {
+  const x = 100;
+  const y = 130;
+  const w = 200;
+  const h = 100;
+  ctx.save();
+  ctx.shadowBlur = 22;
+  ctx.shadowColor = 'rgba(255, 215, 80, 0.25)';
+  ctx.fillStyle = 'rgba(12, 22, 44, 0.96)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 14);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 215, 80, 0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 14);
+  ctx.stroke();
+  ctx.fillStyle = WHITE;
+  ctx.font = 'bold 13px "Courier New"';
+  ctx.fillText('DONOR TEMPLATE', x + 14, y + 24);
+  ctx.font = '12px "Courier New"';
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.fillText('5\' - A A T C G - 3\'', x + 14, y + 46);
+  ctx.fillText('3\' - T T A G C - 5\'', x + 14, y + 66);
+  ctx.fillText('for HDR repair', x + 14, y + 88);
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255, 210, 90, 0.95)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + w - 12, y + h / 2);
+  ctx.lineTo(500, 370);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255, 210, 90, 0.95)';
+  ctx.beginPath();
+  ctx.moveTo(500, 370);
+  ctx.lineTo(492, 362);
+  ctx.lineTo(492, 378);
+  ctx.fill();
+  ctx.fillStyle = WHITE;
+  ctx.font = 'bold 12px "Courier New"';
+  ctx.fillText('HDR template', x + 14, y - 8);
 }
 
 function drawHudExtras() {
