@@ -408,16 +408,21 @@ function drawRepairActors(choice, stateTimer, time) {
   }
 
   if (choice === 'HDR') {
-    const progress = Math.min(1, stateTimer / 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.fillRect(PANEL_X + 12, PANEL_Y + 160, 316, 130);
-    ctx.strokeStyle = 'rgba(255, 210, 90, 0.25)';
-    ctx.lineWidth = 1.8;
-    ctx.strokeRect(PANEL_X + 12, PANEL_Y + 160, 316, 130);
+    const bgX = 40;
+    const bgY = 160;
+    const bgW = 304;
+    const bgH = 144;
+    ctx.fillStyle = 'rgba(1, 10, 28, 0.88)';
+    ctx.fillRect(bgX, bgY, bgW, bgH);
+    ctx.strokeStyle = 'rgba(255, 210, 90, 0.28)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bgX, bgY, bgW, bgH);
     ctx.fillStyle = WHITE;
     ctx.font = '12px "Share Tech Mono"';
-    wrapText(ctx, 'HDR donor template is aligned to the cut site', PANEL_X + 24, PANEL_Y + 186, 280, 18);
-    drawDonorTemplate(PANEL_X + 20, PANEL_Y + 210);
+    const textX = bgX + 16;
+    const textStartY = bgY + 30;
+    const textEndY = wrapText(ctx, 'HDR donor template is aligned to the cut site', textX, textStartY, bgW - 32, 20);
+    drawDonorTemplate(bgX + 14, textEndY + 10);
   }
 }
 
